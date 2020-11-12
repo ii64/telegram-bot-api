@@ -1,0 +1,53 @@
+name: Go
+on: [pull_request,push]
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code into directory
+      uses: actions/checkout@v2
+
+    - name: Install environment
+      run: |
+        sudo apt-get update
+        sudo apt-get upgrade
+        sudo apt-get install -y make git zlib1g-dev libssl-dev gperf cmake g++
+        rm -rf build
+        mkdir build
+
+    - name: Build
+      run: |
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=.. ..
+        cmake --build . --target install
+        md5sum ../bin/* > MD5_CHECKSUM
+        zip -r ./telegram-bot-api-linux-amd64.zip ../bin/telegram-bot-api MD5_CHECKSUM
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with: 
+        tag_name: ${{ github.ref }}_${{ github.sha }}
+        release_name: ${{ github.ref }}
+        body: |
+          Compiled binary ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+        
+        
+    - name: Uploading linux amd64 binary
+      id: upload_release_linux_amd64
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./telegram-bot-api-linux-amd64.zip
+        asset_name: telegram-bot-api-linux-amd64.zip
+        asset_content_type: application/zip
