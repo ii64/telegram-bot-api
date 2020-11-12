@@ -9,6 +9,8 @@ jobs:
 
     - name: Check out code into directory
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
 
     - name: Install environment
       run: |
